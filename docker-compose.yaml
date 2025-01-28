@@ -1,0 +1,63 @@
+services:
+    app:
+        networks:
+            - asker_net_new
+        build: ./fpm
+        volumes:
+            - ./asker:/var/www/html
+            - ./fpm/php.ini:/etc/php/7.4/fpm/php.ini
+        entrypoint: docker-entrypoint.sh
+        depends_on:
+            - db
+        environment:
+            MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+            MYSQL_USER: "${MYSQL_USER}"
+            MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+            MYSQL_DATABASE: "${MYSQL_DATABASE}"
+            PROXY: "${PROXY}"
+            LD_LIBRARY_PATH: /opt/oracle/instantclient_21_4
+        restart: ${RESTART}
+    web:
+        networks:
+            - asker_net_new
+        build: ./nginx
+        ports:
+            - "${LISTEN:-80}:${LISTEN:-80}"
+        volumes:
+            - ./nginx/${SSL:-default}:/etc/nginx/sites-available/default
+            - ./asker/:/var/www/html/
+            - ./ssl/:/etc/nginx/ssl
+        depends_on:
+            - app
+            - pma
+        restart: ${RESTART}
+    pma:
+        networks:
+            - asker_net_new
+        image: phpmyadmin/phpmyadmin:5
+        depends_on:
+            - db
+              #ports:
+              #    - "8080:80"
+        environment:
+            PMA_HOST: db
+            PMA_ABSOLUTE_URI: /phpmyadmin
+        restart: ${RESTART}
+    db:
+        networks:
+            - asker_net_new
+        image: mariadb:10.7-focal
+        volumes:
+            - ./data:/var/lib/mysql
+            - ./bootstrap/:/docker-entrypoint-initdb.d/
+        environment:
+            MYSQL_ROOT_PASSWORD: "${MYSQL_ROOT_PASSWORD}"
+            MYSQL_USER: "${MYSQL_USER}"
+            MYSQL_PASSWORD: "${MYSQL_PASSWORD}"
+            MYSQL_DATABASE: "${MYSQL_DATABASE}"
+        restart: ${RESTART}
+networks:
+    asker_net_new:
+        ipam:
+            config:
+                - subnet: 10.248.1.0/24
