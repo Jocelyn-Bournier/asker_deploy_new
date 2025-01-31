@@ -228,8 +228,6 @@ while ! $BINARY exec db mysqladmin ping -h db -u $MYSQL_USER -p$MYSQL_PASSWORD -
         sleep 10 #increase to 10 to reduce output
         echo "Waiting for MySQL"
 done
-# create interaction_traces table
-docker exect -it asker_deploy_new-db-1 mysql -p$MYSQL_PASSWORD -u $MYSQL_USER $MYSQL_DATABASE -e "CREATE TABLE interaction_traces (id INT AUTO_INCREMENT PRIMARY KEY, user_id INT NOT NULL, type VARCHAR(128) NOT NULL, dd DATETIME NOT NULL, df DATETIME NOT NULL, content JSON NOT NULL, context JSON NOT NULL);"
 
 $BINARY exec app php bin/console doctrine:schema:update -f
 # while is_visible not implemented in model
